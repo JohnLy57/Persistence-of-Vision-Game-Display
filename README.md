@@ -27,4 +27,4 @@ Item  | Price |
 | `1 x LSM6DS3 Accelerometer` |$2.59 |
 | `2 x Buttons` |$1 |
 |  | |
-| `Total ` |$76.45 |
+| `Total ` |$96.45 |
