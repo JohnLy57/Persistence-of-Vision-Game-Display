@@ -13,18 +13,21 @@ Our team is really intrigued by POV displays and we wanted to explore how POV wo
 Item  | Price |
 | --- | --- |
 | `1 x Box Fan` |$20 |
-| `1 x 0.5m Dot Star LED strip ` | $25 |
-| `1 x Comidox Slip Ring ` |$7.79 |
-| `1 x IR Sensor and 1x IR Receiver ` |$1 |
+| `1 x PIC32MX250F128B` |$5 |
 | `1 x ECE4760 Small Board` |$4 |
 | `1 x Microstick ` |$1 |
+| `1 x 0.5m Dot Star LED strip ` | $25 |
+| `1 x Comidox Slip Ring ` |$7.79 |
+| `1 x Level Shifter `	|$0.81 |
+| `1 x IR LED ` |$0.47 |
+| `1 x IR Phototransitor ` |$0.71 |
+| `1 x SparkFun LSM6DS3 6DOF IMU` |$10.95 |
 | `2 x Small Solder Board ` |$2 |
+| `3D Printed Parts` | n/a |
 | `1 x 9V Battery ` |$2 |
 | `4 x 1.5V Battery` |$2 |
-| `1 x PIC32MX250F128B` |$5 |
-| `Several Jumper Cables` |$3|
-| `7 x Header Socket ` |$0.07 |
-| `1 x LSM6DS3 Accelerometer` |$2.59 |
+| `30 x Several Jumper Cables` |$3|
+| `23 x Header Socket ` |$1.15 |
 | `2 x Buttons` |$1 |
 |  | |
-| `Total ` |$96.45 |
+| `Total ` |$88.50 |
