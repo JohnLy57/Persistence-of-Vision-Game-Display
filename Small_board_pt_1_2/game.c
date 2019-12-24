@@ -1,6 +1,6 @@
 /*
  * File:        ECE4760 POV Dino Game
- * Author:      Zesun Yang and John Ly
+ * Author:      Zesun Yang and John Ly 
  * For use with Sean Carroll's Little Board
  */
 
@@ -33,10 +33,11 @@
 ////////////////////////////////////
 
 char buffer[60];
-// generate max 3 fireballs
+
+#define EMPTY 0
+#define OBSTACLE 1
 #define nObs 3
 
-// struct for fireballs
 typedef struct{
     int x;
     int xrange;
@@ -44,7 +45,6 @@ typedef struct{
     int alive;
 }GameObject;
 
-// struct for dinosaur
 typedef struct{
     int feetHeight;
     //left_xpos is update counter
@@ -53,10 +53,9 @@ typedef struct{
     int xrange;
 }Human;
 
-//number of nFireBall on the POV
 int nFireBallsNow = 1;
 
-// dinosaur init
+
 Human human={.feetHeight=29,.left_xpos=25,.xrange=11};
 
 GameObject map[nObs];
@@ -118,6 +117,7 @@ pixel pixel_array[PixelNum];
 // === display the LEDs ===========================================
 // copies the contents of pixel_array to SPI
 void write_pixels(void){
+
     // start frame
     WriteSPI2(START_FRAME);
     // wait for end of transaction
@@ -176,7 +176,7 @@ void set_pixel_hsv(int i, float h, float s, float v, char intensity){
     pixel_array[i].blue = b  ;
 }
 
-// erase entire dotstar strip
+
 void clearDotStar(){
     static int i;
     for(i = 0; i <64; i++){
@@ -191,13 +191,11 @@ void clearDotStar(){
 
 volatile int ready;
 volatile int update_counter =0 ;
-// ISR for input capture - IR sensors
 void __ISR(_INPUT_CAPTURE_4_VECTOR,ipl3) Timer23Handler(void)
 {
     mIC4ClearIntFlag();
     capture_period = mIC4ReadCapture();
     ready=1;
-    // clear the timer every pass
     WriteTimer23(0);
     update_counter = 0;
 
@@ -207,16 +205,16 @@ void __ISR(_INPUT_CAPTURE_4_VECTOR,ipl3) Timer23Handler(void)
 void __ISR(_TIMER_4_VECTOR,ipl4) Timer4Handler(void)
 {
     mT4ClearIntFlag();
-
+    
     if(startGame){
+        
         if(dieFlag){
         //blend the dinosuar
            static int i;
            for(i=21; i<29; i++){
-               // a dinosaur color
                r = 0x2c;
                g = 0x90;
-               b = 0x0f ;
+               b = 0x0f ; //(dds_acc_b>>8)
                intensity = QUAR_ON ;
                set_pixel_rgb(i,r,g,b,intensity);
            }
@@ -224,23 +222,22 @@ void __ISR(_TIMER_4_VECTOR,ipl4) Timer4Handler(void)
         }else{
             current_time = ReadTimer23();
             clearDotStar();
-            static int row;
+            static int row;    
             static int m;
-            // write fireball based on updated location - phase lock
             for(m=0;m<nObs;m++){
               if(update_counter>=map[m].x && update_counter< (map[m].x+ map[m].xrange)){
-                for(row = 0; row <11; row++){
+                for(row = 0; row <10; row++){
                     r = ((fire_color[row][update_counter-map[m].x]>>16) & 0xff);
                     g = ((fire_color[row][update_counter-map[m].x]>>8) & 0xff);
                     b = (fire_color[row][update_counter-map[m].x] & 0xff);
                     intensity =QUAR_ON;
-                    set_pixel_rgb(29-11+row,r,g,b,intensity);
+                    set_pixel_rgb(29-10+row,r,g,b,intensity);
                 }
               }
 
             }
 
-            // draw dinosaur based on dinosaur feet position
+
             if( (update_counter<human.left_xpos+human.xrange) && update_counter>=human.left_xpos ){
                 for(row = 0; row <11; row++){
                     r = ((dino_color[row][update_counter-human.left_xpos]>>16) & 0xff);
@@ -251,27 +248,24 @@ void __ISR(_TIMER_4_VECTOR,ipl4) Timer4Handler(void)
                 }
             }
             write_pixels();
-            // only if ready to play game and the dinosaur is not dead
-            // we can play the game
+
             if(ready && !dieFlag){
                 update_counter++;
             }
         }
     }else{
-
-        // before game starts, run Bruce's dot star test code
         static int i ;
         for(i=0; i<PixelNum; i++){
             // shift dds_acc by 8 for index into table
             // add array index for motion
             // mask with 0xff for moduluo 256 operation
-            r = sine[((dds_acc_r>>8) + i) & 0xff ];
+            r = sine[((dds_acc_r>>8) + i) & 0xff ]; 
             g = c[((dds_acc_g>>8) + i) & 0xff ] ;
             b = sine[((dds_acc_b>>8)) & 0xff ] ; //(dds_acc_b>>8)
             intensity = QUAR_ON ;
             set_pixel_rgb(i,r,g,b,intensity);
         }
-
+        
         write_pixels();
     }
 
@@ -285,6 +279,7 @@ static struct pt pt_timer, pt_acc, pt_anim ;
 // system 1 second interval tick
 int sys_time_seconds ;
 int period_ms;
+//unsigned int current_time;
 int fireFrameCounter = 0;
 
 static PT_THREAD (protothread_anim(struct pt *pt))
@@ -294,20 +289,19 @@ static PT_THREAD (protothread_anim(struct pt *pt))
      while(1) {
         // yield time 1 second
         PT_YIELD_TIME_msec(100) ;
-
-        // button for start game
-        if(PORTAbits.RA0){
-            startGame = 1;
-        }
-        // if reset game button is pressed, clear dead status
-        if(PORTAbits.RA1){
-            dieFlag = 0;
-        }
+        
+//        if(PORTAbits.RA0){
+//            startGame = 1;
+//        }
+//        // if reset game button is pressed, clear dead status
+//        if(PORTAbits.RA1){
+//            dieFlag = 0;
+//        }
         if(!dieFlag){
             frameCount++;
 
             //dino jump
-            if((int)zAccl<13000){
+            if((int)zAccl<12500){
                jump = 1;
             }
             if(frameCount>0 && frameCount<5 && jump==1){
@@ -322,20 +316,16 @@ static PT_THREAD (protothread_anim(struct pt *pt))
                 frameCount=0;
                 jump = 0;
             }
-
+            
             fireFrameCounter++;
-
+            
 
             srand(sys_time_seconds);
-
-            // if we don't current have 3 fire balls on screen
-            // and the first fireball has gone at least 20 frames ahead
-            // create a new fireball at the end of update counter
+            
             if(fireFrameCounter >=20 && nFireBallsNow <3 ){
                 fireFrameCounter = 0;
                 GameObject newObj = {.x=89,.xrange=10, .y=15, .alive=1};
                 map[nFireBallsNow] = newObj;
-                nFireBallsNow++;
 
             }
 
@@ -379,11 +369,25 @@ static PT_THREAD (protothread_anim(struct pt *pt))
 static PT_THREAD (protothread_acc(struct pt *pt))
 {
     PT_BEGIN(pt);
+
+//    mPORTASetBits(BIT_0);
+//    mPORTASetPinsDigitalIn(BIT_0);
+//    CNPUA = BIT_0;
+
     int hall;
 
 
       while(1) {
-          PT_YIELD_TIME_msec(30) ;
+        PT_YIELD_TIME_msec(30) ;
+          
+        if(PORTAbits.RA0){
+            startGame = 1;
+        }
+        // if reset game button is pressed, clear dead status
+        if(PORTAbits.RA1){
+            dieFlag = 0;
+        }
+          
           //holding Xacc, Yacc and Zacc
           float values[3]= {0,0,0};
           readImuValues(values);
@@ -406,11 +410,11 @@ int position=0, dir=1;
 
 static PT_THREAD (protothread_timer(struct pt *pt)){
     PT_BEGIN(pt);
-
+      
       // with a 16 bit DDS and 8-bit sine table index
       // frequency of sine output is related to increment as
       // inc = Fout * 2^16 * DDS_sample_time
-      // e.g. for 2 Hz and sample time 0f 30 millisec:
+      // e.g. for 2 Hz and sample time 0f 30 millisec: 
       // inc = 2 * 2^16 * 0.030 = 3932
       // or an increment of about 2000 per Hz. (with 30 mS sample time)
       // set up DDS tables
@@ -418,34 +422,50 @@ static PT_THREAD (protothread_timer(struct pt *pt)){
       static int i ;
       for(i=0; i<256; i++){
         sine[i] = (int)(120.*sin((float)i*6.28/256.)+ 120);
-        c[i] = (int)(120.*cos((float)i*6.28/256.)+ 120);
+        c[i] = (int)(120.*cos((float)i*6.28/256.)+ 120); 
         m[i] = (360.*((float)i/256.)); //  i to h in degrees
       }
-
+      
       while(1) {
-        // yield time
+        // yield time 
         PT_YIELD_TIME_msec(DDS_sample_time) ;
         // DDS phase incrementers
-        dds_acc_r += dds_inc_r ;
+        dds_acc_r += dds_inc_r ; 
         dds_acc_g += dds_inc_g ;
         dds_acc_b += dds_inc_b ;
         dds_acc_m += dds_inc_m ;
-
+        
+//        for(i=0; i<PixelNum; i++){
+//            // shift dds_acc by 8 for index into table
+//            // add array index for motion
+//            // mask with 0xff for moduluo 256 operation
+//            r = sine[((dds_acc_r>>8) + i) & 0xff ]; 
+//            g = c[((dds_acc_g>>8) + i) & 0xff ] ;
+//            b = sine[((dds_acc_b>>8)) & 0xff ] ; //(dds_acc_b>>8)
+//            intensity = HALF_ON ;
+//            set_pixel_rgb(i,r,g,b,intensity);
+//        }
+//        
+//        write_pixels();
+       
       } // END WHILE(1)
   PT_END(pt);
 } // timer thread
+
+
+
 
 
 // === Main  ======================================================
 void main(void) {
  //SYSTEMConfigPerformance(PBCLK);
 
-  ANSELA = 0; ANSELB = 0;
+  ANSELA = 0; ANSELB = 0;   
    // our hall effect sensor pin
     mPORTBSetBits(BIT_3);
     mPORTBSetPinsDigitalIn(BIT_3);
     CNPDB = BIT_3;
-
+    
     // game buttons
     mPORTASetBits(BIT_0 | BIT_1);
     mPORTASetPinsDigitalIn(BIT_0 | BIT_1);
@@ -469,13 +489,11 @@ void main(void) {
     // SDO2 (MOSI) is in PPS output group 2, could be connected to RB5 which is pin 14
     PPSOutput(2, RPB5, SDO2);
 
-  // === Hall Effect Sensor ISR =====
+// === Hall Effect Sensor ISR =====
     // open a 16bit timer with 2s timeout period65535
+    // open a 32bit (2^32-1 = 4,294,967,295 overflow) timer with prescaler of 1. 107.37s before overflow
+    // Timer set to overflow at 10 million cycles, 0.25s with 40MHz clock?
     OpenTimer23(T23_ON| T23_PS_1_1 |T23_SOURCE_INT, 10000000);
-
-    //45283 -- 100 updates /rev
-    OpenTimer4(T4_ON |T4_SOURCE_INT|T4_PS_1_1,45283);
-    ConfigIntTimer4(T4_INT_ON|T4_INT_PRIOR_2);
 
     //==set up input capture
     OpenCapture4(IC_EVERY_FALL_EDGE | IC_INT_1CAPTURE | IC_TIMER3_SRC |IC_ON| IC_CAP_32BIT);
@@ -485,6 +503,13 @@ void main(void) {
 
     //ConfigINT4(EXT_INT_ENABLE|FALLING_EDGE_INT| EXT_INT_PRI_1);
     PPSInput(1, IC4, RPB3);
+    
+// === DotStar Update Rate ====
+    // Fan Speed = 1 -> ~530 RPM ~4.5 million cycles/rev
+    // 45283 -- 100 updates /rev
+    // 17689 -- 256
+    OpenTimer4(T4_ON |T4_SOURCE_INT|T4_PS_1_1,45283);
+    ConfigIntTimer4(T4_INT_ON|T4_INT_PRIOR_2);
 
 
   // === Open i2c ================
@@ -505,7 +530,7 @@ void main(void) {
 
   // seed random color
   srand(1);
-
+  
   GameObject newObj = {.x=89,.xrange=10, .y=15, .alive= 1};
   map[0]=newObj;
 

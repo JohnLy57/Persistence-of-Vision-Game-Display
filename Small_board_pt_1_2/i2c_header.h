@@ -2,8 +2,6 @@
 #define USE_AND_OR	// To enable AND_OR mask setting for I2C. 
 //#include <i2c.h>
 #include "plib.h"
-#include "tft_master.h"
-
 
 //=====i2Cparameters========
 //datasheet: slave address associated toLSM6DS3 is 110101xb
